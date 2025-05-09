@@ -24,29 +24,51 @@ fun ShoppingListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showFilterDialog by remember { mutableStateOf(false) }
+    var showAddEditDialog by remember { mutableStateOf(false) }
+    var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
+    var showSearchBar by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Shopping List") },
-                actions = {
-                    // Search icon
-                    IconButton(onClick = { /* TODO: Implement search */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
-                    // Filter icon
-                    IconButton(onClick = { showFilterDialog = true }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
-                    }
-                    // Archive icon
-                    IconButton(onClick = onNavigateToArchived) {
-                        Icon(Icons.Default.Archive, contentDescription = "Archived Items")
-                    }
+            if (showSearchBar) {
+                SearchBar(
+                    query = uiState.searchQuery,
+                    onQueryChange = { viewModel.setSearchQuery(it) },
+                    onSearch = { /* Search is performed automatically */ },
+                    active = true,
+                    onActiveChange = { showSearchBar = it },
+                    leadingIcon = {
+                        IconButton(onClick = { showSearchBar = false }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    placeholder = { Text("Search items...") },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Search suggestions could be added here
                 }
-            )
+            } else {
+                TopAppBar(
+                    title = { Text("Shopping List") },
+                    actions = {
+                        // Search icon
+                        IconButton(onClick = { showSearchBar = true }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
+                        // Filter icon
+                        IconButton(onClick = { showFilterDialog = true }) {
+                            Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                        }
+                        // Archive icon
+                        IconButton(onClick = onNavigateToArchived) {
+                            Icon(Icons.Default.Archive, contentDescription = "Archived Items")
+                        }
+                    }
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddItem) {
+            FloatingActionButton(onClick = { showAddEditDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
         }
@@ -71,7 +93,10 @@ fun ShoppingListScreen(
                     items(uiState.items) { item ->
                         ShoppingItemCard(
                             item = item,
-                            onItemClick = { /* TODO: Implement edit */ },
+                            onItemClick = {
+                                itemToEdit = item
+                                showAddEditDialog = true
+                            },
                             onArchiveClick = { viewModel.archiveItem(item) },
                             onDeleteClick = { viewModel.deleteItem(item) }
                         )
@@ -100,6 +125,24 @@ fun ShoppingListScreen(
             onPrioritySelected = { viewModel.setSelectedPriority(it) },
             onCategorySelected = { viewModel.setSelectedCategory(it) },
             onDismiss = { showFilterDialog = false }
+        )
+    }
+
+    // Add/Edit dialog
+    if (showAddEditDialog) {
+        AddEditItemDialog(
+            item = itemToEdit,
+            onDismiss = {
+                showAddEditDialog = false
+                itemToEdit = null
+            },
+            onSave = { item ->
+                if (itemToEdit != null) {
+                    viewModel.updateItem(item)
+                } else {
+                    viewModel.addItem(item)
+                }
+            }
         )
     }
 }
