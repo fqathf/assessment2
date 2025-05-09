@@ -6,23 +6,32 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ShoppingItemDao {
     @Query("SELECT * FROM shopping_items WHERE isArchived = 0 ORDER BY priority DESC, name ASC")
-    fun getAllActiveItems(): Flow<List<ShoppingItem>>
+    fun getAllShoppingItems(): Flow<List<ShoppingItem>>
 
     @Query("SELECT * FROM shopping_items WHERE isArchived = 1 ORDER BY priority DESC, name ASC")
-    fun getAllArchivedItems(): Flow<List<ShoppingItem>>
+    fun getArchivedItems(): Flow<List<ShoppingItem>>
+
+    @Query("SELECT * FROM shopping_items WHERE priority = :priority AND isArchived = 0 ORDER BY name ASC")
+    fun getItemsByPriority(priority: Priority): Flow<List<ShoppingItem>>
+
+    @Query("SELECT * FROM shopping_items WHERE category = :category AND isArchived = 0 ORDER BY priority DESC, name ASC")
+    fun getItemsByCategory(category: String): Flow<List<ShoppingItem>>
+
+    @Query("SELECT * FROM shopping_items WHERE (name LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%') AND isArchived = 0 ORDER BY priority DESC, name ASC")
+    fun searchItems(query: String): Flow<List<ShoppingItem>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertItem(item: ShoppingItem)
+    suspend fun insert(item: ShoppingItem)
 
     @Update
-    suspend fun updateItem(item: ShoppingItem)
+    suspend fun update(item: ShoppingItem)
 
     @Delete
-    suspend fun deleteItem(item: ShoppingItem)
+    suspend fun delete(item: ShoppingItem)
 
-    @Query("UPDATE shopping_items SET isChecked = :isChecked WHERE id = :itemId")
-    suspend fun updateItemCheckedStatus(itemId: Int, isChecked: Boolean)
+    @Query("DELETE FROM shopping_items WHERE isArchived = 1")
+    suspend fun deleteAllArchived()
 
-    @Query("UPDATE shopping_items SET isArchived = :isArchived WHERE id = :itemId")
-    suspend fun updateItemArchiveStatus(itemId: Int, isArchived: Boolean)
+    @Query("SELECT DISTINCT category FROM shopping_items WHERE category IS NOT NULL AND category != '' AND isArchived = 0 ORDER BY category ASC")
+    fun getAllCategories(): Flow<List<String>>
 } 

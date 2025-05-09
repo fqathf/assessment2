@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,7 +40,7 @@ fun ShoppingListScreen(
                     onActiveChange = { showSearchBar = it },
                     leadingIcon = {
                         IconButton(onClick = { showSearchBar = false }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     placeholder = { Text("Search items...") },
@@ -122,6 +123,7 @@ fun ShoppingListScreen(
         FilterDialog(
             selectedPriority = uiState.selectedPriority,
             selectedCategory = uiState.selectedCategory,
+            categories = uiState.categories,
             onPrioritySelected = { viewModel.setSelectedPriority(it) },
             onCategorySelected = { viewModel.setSelectedCategory(it) },
             onDismiss = { showFilterDialog = false }
@@ -270,6 +272,7 @@ fun EmptyListMessage() {
 fun FilterDialog(
     selectedPriority: Priority?,
     selectedCategory: String?,
+    categories: List<String>,
     onPrioritySelected: (Priority?) -> Unit,
     onCategorySelected: (String?) -> Unit,
     onDismiss: () -> Unit
@@ -288,7 +291,7 @@ fun FilterDialog(
                         FilterChip(
                             selected = priority == selectedPriority,
                             onClick = { onPrioritySelected(if (priority == selectedPriority) null else priority) },
-                            label = { Text(priority.name.lowercase().capitalize()) }
+                            label = { Text(priority.name.lowercase().replaceFirstChar { it.uppercase() }) }
                         )
                     }
                 }
@@ -296,7 +299,38 @@ fun FilterDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text("Category", style = MaterialTheme.typography.titleSmall)
-                // TODO: Add category filter chips
+                if (categories.isEmpty()) {
+                    Text(
+                        "No categories available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.chunked(2).forEach { rowCategories ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                rowCategories.forEach { category ->
+                                    FilterChip(
+                                        selected = category == selectedCategory,
+                                        onClick = { onCategorySelected(if (category == selectedCategory) null else category) },
+                                        label = { Text(category) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                // Add empty space if row is not full
+                                repeat(2 - rowCategories.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {

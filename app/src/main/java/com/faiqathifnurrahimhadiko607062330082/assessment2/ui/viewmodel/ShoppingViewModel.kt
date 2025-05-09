@@ -18,6 +18,7 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
     data class ShoppingUiState(
         val items: List<ShoppingItem> = emptyList(),
         val archivedItems: List<ShoppingItem> = emptyList(),
+        val categories: List<String> = emptyList(),
         val searchQuery: String = "",
         val selectedPriority: Priority? = null,
         val selectedCategory: String? = null,
@@ -35,14 +36,19 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
     private fun loadData() {
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isLoading = true) }
+                _uiState.update { it.copy(isLoading = true, error = null) }
                 
-                // Collect active items
-                repository.allShoppingItems.collect { items ->
+                // Collect filtered items
+                repository.getFilteredItems(
+                    searchQuery = _uiState.value.searchQuery,
+                    priority = _uiState.value.selectedPriority,
+                    category = _uiState.value.selectedCategory
+                ).collect { items ->
                     _uiState.update { currentState ->
                         currentState.copy(
                             items = items,
-                            isLoading = false
+                            isLoading = false,
+                            error = null
                         )
                     }
                 }
@@ -50,7 +56,7 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "An error occurred"
+                        error = e.message ?: "Failed to load items"
                     )
                 }
             }
@@ -58,8 +64,27 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
 
         // Collect archived items
         viewModelScope.launch {
-            repository.archivedItems.collect { items ->
-                _uiState.update { it.copy(archivedItems = items) }
+            try {
+                repository.archivedItems.collect { items ->
+                    _uiState.update { it.copy(archivedItems = items) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(error = e.message ?: "Failed to load archived items")
+                }
+            }
+        }
+
+        // Collect categories
+        viewModelScope.launch {
+            try {
+                repository.allCategories.collect { categories ->
+                    _uiState.update { it.copy(categories = categories) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(error = e.message ?: "Failed to load categories")
+                }
             }
         }
     }
@@ -67,6 +92,7 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
     fun addItem(item: ShoppingItem) {
         viewModelScope.launch {
             try {
+                _uiState.update { it.copy(error = null) }
                 repository.insert(item)
             } catch (e: Exception) {
                 _uiState.update { 
@@ -79,6 +105,7 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
     fun updateItem(item: ShoppingItem) {
         viewModelScope.launch {
             try {
+                _uiState.update { it.copy(error = null) }
                 repository.update(item)
             } catch (e: Exception) {
                 _uiState.update { 
@@ -91,6 +118,7 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
     fun deleteItem(item: ShoppingItem) {
         viewModelScope.launch {
             try {
+                _uiState.update { it.copy(error = null) }
                 repository.delete(item)
             } catch (e: Exception) {
                 _uiState.update { 
@@ -103,6 +131,7 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
     fun archiveItem(item: ShoppingItem) {
         viewModelScope.launch {
             try {
+                _uiState.update { it.copy(error = null) }
                 repository.archiveItem(item)
             } catch (e: Exception) {
                 _uiState.update { 
@@ -138,14 +167,17 @@ class ShoppingViewModel(private val repository: ShoppingRepository) : ViewModel(
 
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+        loadData() // Reload data with new search query
     }
 
     fun setSelectedPriority(priority: Priority?) {
         _uiState.update { it.copy(selectedPriority = priority) }
+        loadData() // Reload data with new priority filter
     }
 
     fun setSelectedCategory(category: String?) {
         _uiState.update { it.copy(selectedCategory = category) }
+        loadData() // Reload data with new category filter
     }
 
     fun clearError() {

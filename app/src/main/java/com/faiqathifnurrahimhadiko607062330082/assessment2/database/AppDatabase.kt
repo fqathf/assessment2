@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [ShoppingItem::class], version = 1, exportSchema = true)
+@Database(entities = [ShoppingItem::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingItemDao(): ShoppingItemDao
@@ -21,7 +21,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "shopping_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }
@@ -37,6 +39,10 @@ class Converters {
 
     @androidx.room.TypeConverter
     fun toPriority(value: String): Priority {
-        return Priority.valueOf(value)
+        return try {
+            Priority.valueOf(value)
+        } catch (e: IllegalArgumentException) {
+            Priority.MEDIUM
+        }
     }
 } 

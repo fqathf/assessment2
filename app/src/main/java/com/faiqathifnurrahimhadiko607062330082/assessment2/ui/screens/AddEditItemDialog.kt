@@ -124,7 +124,7 @@ fun AddEditItemDialog(
                         FilterChip(
                             selected = priority == priorityOption,
                             onClick = { priority = priorityOption },
-                            label = { Text(priorityOption.name.lowercase().capitalize()) }
+                            label = { Text(priorityOption.name.lowercase().replaceFirstChar { it.uppercase() }) }
                         )
                     }
                 }

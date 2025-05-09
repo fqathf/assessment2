@@ -1,6 +1,7 @@
 package com.faiqathifnurrahimhadiko607062330082.assessment2.database
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class ShoppingRepository(private val shoppingItemDao: ShoppingItemDao) {
     // Get all active shopping items
@@ -9,19 +10,25 @@ class ShoppingRepository(private val shoppingItemDao: ShoppingItemDao) {
     // Get all archived items
     val archivedItems: Flow<List<ShoppingItem>> = shoppingItemDao.getArchivedItems()
 
-    // Get items by priority
-    fun getItemsByPriority(priority: Priority): Flow<List<ShoppingItem>> {
-        return shoppingItemDao.getItemsByPriority(priority)
-    }
+    // Get all categories
+    val allCategories: Flow<List<String>> = shoppingItemDao.getAllCategories()
 
-    // Get items by category
-    fun getItemsByCategory(category: String): Flow<List<ShoppingItem>> {
-        return shoppingItemDao.getItemsByCategory(category)
-    }
-
-    // Search items
-    fun searchItems(query: String): Flow<List<ShoppingItem>> {
-        return shoppingItemDao.searchItems("%$query%")
+    // Get filtered items based on search query and filters
+    fun getFilteredItems(
+        searchQuery: String,
+        priority: Priority?,
+        category: String?
+    ): Flow<List<ShoppingItem>> {
+        return when {
+            // If there's a search query, use search
+            searchQuery.isNotBlank() -> shoppingItemDao.searchItems(searchQuery)
+            // If there's a priority filter, use priority filter
+            priority != null -> shoppingItemDao.getItemsByPriority(priority)
+            // If there's a category filter, use category filter
+            category != null -> shoppingItemDao.getItemsByCategory(category)
+            // Otherwise, return all items
+            else -> allShoppingItems
+        }
     }
 
     // Insert a new shopping item

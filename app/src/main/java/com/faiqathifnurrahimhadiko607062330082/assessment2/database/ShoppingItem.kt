@@ -12,7 +12,11 @@ data class ShoppingItem(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val priority: Priority,
+    val description: String = "",
+    val category: String = "",
+    val priority: Priority = Priority.MEDIUM,
+    val quantity: Int = 1,
+    val isArchived: Boolean = false,
     val isChecked: Boolean = false,
-    val isArchived: Boolean = false
+    val createdAt: Long = System.currentTimeMillis()
 ) 
