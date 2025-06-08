@@ -20,8 +20,7 @@ import com.faiqathifnurrahimhadiko607062330082.assessment2.ui.viewmodel.Shopping
 @Composable
 fun ShoppingListScreen(
     viewModel: ShoppingViewModel,
-    onNavigateToArchived: () -> Unit,
-    onAddItem: () -> Unit
+    onNavigateToArchived: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showFilterDialog by remember { mutableStateOf(false) }
@@ -92,8 +91,8 @@ fun ShoppingListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(uiState.items) { item ->
-                        ShoppingItemCard(
-                            item = item,
+                ShoppingItemCard(
+                    item = item,
                             onItemClick = {
                                 itemToEdit = item
                                 showAddEditDialog = true
@@ -189,9 +188,9 @@ fun ShoppingItemCard(
                     PriorityChip(priority = item.priority)
                     if (item.category.isNotBlank()) {
                         CategoryChip(category = item.category)
-                    }
-                }
             }
+        }
+    }
             Row {
                 IconButton(onClick = onArchiveClick) {
                     Icon(Icons.Default.Archive, contentDescription = "Archive")
@@ -287,7 +286,7 @@ fun FilterDialog(
                     modifier = Modifier.padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Priority.values().forEach { priority ->
+                    Priority.entries.forEach { priority ->
                         FilterChip(
                             selected = priority == selectedPriority,
                             onClick = { onPrioritySelected(if (priority == selectedPriority) null else priority) },
@@ -339,4 +338,4 @@ fun FilterDialog(
             }
         }
     )
-} 
+}
